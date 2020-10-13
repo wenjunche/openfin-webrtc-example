@@ -6,7 +6,7 @@
   "scripts": {
     "build": "webpack ",
     "start": "webpack-dev-server --mode=development",
-    "start:example": "openfin --launche --config http://localhost:8081/app.json"
+    "start:example": "openfin --launch --config http://localhost:8081/app.json"
   },
   "dependencies": {
     "openfin-webrtc-client": "1.0.1",

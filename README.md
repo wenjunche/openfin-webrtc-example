@@ -16,6 +16,8 @@ A sample WebRTC app that uses signaling and STUN servers hosted by OpenFin.
 
    `npm run start`
 
-1. Start the Webpack dev server.
+1. Start the example.
 
-   `npm run start`
+   `npm run start:example`
+
+   Two instances of the example app need to be started so WebRTC can be established.
