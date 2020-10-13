@@ -23,7 +23,6 @@ const appJson = {
     },
   };
   
-const CopyPlugin = require('copy-webpack-plugin');
 const HtmlwebpackPlugin = require('html-webpack-plugin');
 
 module.exports = {
