@@ -4,7 +4,7 @@ const channelsMap: Map<string, RTCDataChannel> = new Map();  // label -> DataCha
 
 const configuration: Configuration = {
     signalingBaseUrl: 'https://webrtc-signaling-dev.openfin.co',
-    peerDomain: 'webrtcExample',
+    pairingCode: 'webrtcExample',
     debug: false
 };
 
