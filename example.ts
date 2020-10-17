@@ -2,6 +2,9 @@ import { Configuration, WebRTCSignaling, SignalingEvent } from 'openfin-webrtc-c
 
 const channelsMap: Map<string, RTCDataChannel> = new Map();  // label -> DataChannel
 
+// @ts-ignore
+let blpClient;
+
 const configuration: Configuration = {
     signalingBaseUrl: 'https://webrtc-signaling-dev.openfin.co',
     pairingCode: 'webrtcExample',
@@ -31,6 +34,7 @@ window.addEventListener("DOMContentLoaded",  async () => {
     setupChannelUI('1', webRTCClient);
     setupChannelUI('2', webRTCClient);
 
+    await blpClientInit();
 });
 
 function onWebRTCReady() {
@@ -38,6 +42,47 @@ function onWebRTCReady() {
         const btn = document.getElementById(`channelCreate${i}`) as HTMLButtonElement;
         btn.disabled = false;
     }
+
+    const btn = document.getElementById('bloomberg') as HTMLButtonElement;
+    btn.disabled = false;
+    btn.addEventListener('click', () => {
+        if (channelsMap.size > 0) {
+            // just pick the fist a data channel
+            const channelName = channelsMap.keys().next().value;
+            const refDataRequest = { 
+                type: 'bloomberg',
+                request: {
+                        serviceUri: "//blp/refdata",
+                        operationName: "ReferenceDataRequest",
+                        requestObject: {
+                        securities: [
+                            "IBM US Equity",
+                            "VOD LN Equity"
+                        ],
+                        fields: [
+                            "PX_LAST",
+                            "DS002",
+                            "EQY_WEIGHTED_AVG_PX"
+                        ],
+                        overrides: [
+                            {
+                            "fieldId": "VWAP_START_TIME",
+                            "value": "9:30"
+                            },
+                            {
+                            "fieldId": "VWAP_END_TIME",
+                            "value": "11:30"
+                            }
+                        ]
+                        }
+                    }
+                };
+            channelsMap.get(channelName).send(JSON.stringify(refDataRequest));
+        } else {
+            const status = document.getElementById('bloombergStatus'); 
+            status.innerHTML = 'Please create a data channel first';    
+        }
+    });
 }
 
 function onWebRTCDisconnect() {
@@ -58,7 +103,11 @@ function setupChannelUI(channelId: string, webRTCClient: WebRTCSignaling ) {
     const sendBtn = document.getElementById('channelSend' + channelId);
     sendBtn.addEventListener('click', () => {
         const channelName = (document.getElementById('channelName' + channelId) as HTMLInputElement).value;
-        channelsMap.get(channelName).send((document.getElementById('outgoingText' + channelId) as HTMLInputElement).value)
+        const payload = {
+            type: 'chat',
+            text: (document.getElementById('outgoingText' + channelId) as HTMLInputElement).value
+        }
+        channelsMap.get(channelName).send(JSON.stringify(payload));
     });
 }
 
@@ -69,8 +118,8 @@ function addChannel(channel: RTCDataChannel) {
         const cl = document.getElementById(`channelName${i}`) as HTMLInputElement
         if (cl.value === '') {
             cl.value = name;
-            channel.addEventListener('message', (event) => {
-                populateIncomingText(channel.label, event.data);
+            channel.addEventListener('message', async (event) => {
+                await populateIncomingText(channel.label, event.data);
             });
             channel.addEventListener('close', (event) => {
                 cleanup(channel, cl);
@@ -106,15 +155,37 @@ function cleanup(channel: RTCDataChannel, cl: HTMLInputElement) {
     cl.value = '';
 }
 
-function populateIncomingText(channelName: string, text: any) {
-    const cl1 = document.getElementById('channelName1') as HTMLInputElement
-    const cl2 = document.getElementById('channelName2') as HTMLInputElement
-    if (cl1.value === channelName) {
-        const incoming = document.getElementById('incomingText1');
-        incoming.innerText = text;
+async function populateIncomingText(channelName: string, text: string) {
+    const message = JSON.parse(text);
+    const cl1 = document.getElementById('channelName1') as HTMLInputElement;
+    const cl2 = document.getElementById('channelName2') as HTMLInputElement;
+    if (message.type === 'chat') {
+        if (cl1.value === channelName) {
+            const incoming = document.getElementById('incomingText1');
+            incoming.innerText = text;
+        }
+        if (cl2.value === channelName) {
+            const incoming = document.getElementById('incomingText2');
+            incoming.innerText = text;
+        }
+    } 
+    else if (message.type === 'bloomberg') {
+        const status = document.getElementById('bloombergStatus'); 
+        status.innerHTML = '';
+        // @ts-ignore
+        const sessionStarted:boolean = await blpClient.startSession();
+        if (!sessionStarted) {
+            status.innerHTML = 'Error starting blpApi session';
+            return;
+        }
+        // @ts-ignore
+        let response = await blpClient.serviceRequest(message.request.serviceUri, message.request.operationName, message.request.requestObject);
+        status.innerHTML = JSON.stringify(response);
     }
-    if (cl2.value === channelName) {
-        const incoming = document.getElementById('incomingText2');
-        incoming.innerText = text;
-    }
+}
+
+async function blpClientInit()  {
+    // window.blpApi is set in index.html
+    // @ts-ignore
+    blpClient = await window.blpApi.getClient();
 }
