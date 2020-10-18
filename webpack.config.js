@@ -27,7 +27,7 @@ const HtmlwebpackPlugin = require('html-webpack-plugin');
 
 module.exports = {
     mode: 'development',
-    entry: './example.ts',
+    entry: './example.tsx',
     devtool: 'inline-source-map',
     stats: {
         logging: 'verbose',
@@ -39,7 +39,7 @@ module.exports = {
     module: {
         rules: [
             {
-                test: /\.ts?$/,
+                test: /\.(ts|tsx)?$/,
                 use: 'ts-loader',
                 exclude: /node_modules/,
             }
@@ -64,9 +64,14 @@ module.exports = {
         hotOnly: true,
         before: (app) => {
             app.get('/app.json', (req, res) => {
+                console.log(req.query.blp);
+                let appUrl = `http://localhost:${devPort}/index.html`;
+                if (req.query.blp === 'true') {
+                    appUrl += '?blp=true';
+                }
                 const json = JSON.parse(JSON.stringify(appJson));
                 json.startup_app.uuid = uuidv4();
-                json.startup_app.url = `http://localhost:${devPort}/index.html`;
+                json.startup_app.url = appUrl;
                 res.status(200).json(json);
             })
         }
