@@ -62,7 +62,11 @@ function setupChannelUI(webRTCClient: WebRTCSignaling ) {
 
 async function blpClientInit()  {
     console.log('initializing blpApi client');
+    try {
     // window.blpApi is set in index.html
     // @ts-ignore
-    blpClient = await window.blpApi.getClient();
+        blpClient = await window.blpApi.getClient();        
+    } catch (err) {
+        console.error(err);
+    }
 }

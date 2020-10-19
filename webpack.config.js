@@ -22,7 +22,8 @@ const appJson = {
       version: "stable",
     },
   };
-  
+
+const { CleanWebpackPlugin } = require('clean-webpack-plugin');  
 const HtmlwebpackPlugin = require('html-webpack-plugin');
 
 module.exports = {
@@ -34,7 +35,7 @@ module.exports = {
     },
     output: {
         path: path.resolve(__dirname, "dist"),
-        filename: 'bundle.js'
+        filename: 'bundle.[hash].js'
     },
     module: {
         rules: [
@@ -52,6 +53,7 @@ module.exports = {
         }
     },
     plugins: [
+        new CleanWebpackPlugin(),
         new HtmlwebpackPlugin({
             title: 'WebRTC Example',
             template: 'index.html',
@@ -64,7 +66,6 @@ module.exports = {
         hotOnly: true,
         before: (app) => {
             app.get('/app.json', (req, res) => {
-                console.log(req.query.blp);
                 let appUrl = `http://localhost:${devPort}/index.html`;
                 if (req.query.blp === 'true') {
                     appUrl += '?blp=true';
