@@ -2,6 +2,15 @@
 import * as React from 'react';
 import { WebRTCSignaling, SignalingEvent } from 'openfin-webrtc-client';
 
+//import { ThemeProvider } from '@rmwc/theme';
+import '@rmwc/theme/styles';
+
+import { Button } from '@rmwc/button';
+import '@rmwc/button/styles';
+
+import { TextField } from '@rmwc/textfield';
+import '@rmwc/textfield/styles';
+
 interface Props {
     name: string;
     webRTCClient:WebRTCSignaling;
@@ -92,12 +101,15 @@ export const Channel: React.FunctionComponent<Props> = ( (props) => {
     }
 
     return (
-      <div>  
+      <div> 
+          <div>My test</div> 
         <div>
-            <input type="text" placeholder="Channel name" onChange={ (ev) => onChannelNameChange(ev.target.value) } value={ channelName} /><button onClick={createChannel} disabled={!isWebRTCReady}>Create Channel</button>
+            <TextField label="channel name" onChange={ (ev) => onChannelNameChange((ev.target as HTMLInputElement).value) } value={ channelName} />
+            <Button raised onClick={createChannel} disabled={!isWebRTCReady}>Create Channel</Button>
         </div>
         <div>
-            <input type="text" onChange={ (ev) => onOutgoingTextChange(ev.target.value) } /><button onClick={sendChannelText} disabled={ !dataChannel }>Send</button>
+            <TextField label="outgoing text" onChange={ (ev) => onOutgoingTextChange((ev.target as HTMLInputElement).value) } />
+            <Button raised  onClick={sendChannelText} disabled={ !dataChannel }>Send</Button>
         </div>
         <div>
             <span>Incoming Text:</span><span style={{margin: "0 0 0 10px"}}>{incomingText}</span>
@@ -226,7 +238,7 @@ export const Bloomberg: React.FunctionComponent<BloombergProps> = ( (props) => {
     return (
       <div>  
         <div>
-            <button disabled={!isWebRTCReady} onClick={sendBloombergRequest}>{sendButtonDescription}</button>
+            <button disabled={!isWebRTCReady || props.blpClient} onClick={sendBloombergRequest}>{sendButtonDescription}</button>
         </div>
         <div>
             <label id="bloombergStatus">{incomingText}</label>

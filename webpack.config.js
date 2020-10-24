@@ -12,13 +12,13 @@ const appJson = {
       frame: true,
       defaultCentered: true,
       resizable: true,
-      saveWindowState: true,
-      defaultHeight: 400,
-      defaultWidth: 400,
+      saveWindowState: false,
+      defaultHeight: 610,
+      defaultWidth: 500,
       backgroundThrottling: true,
     },
     runtime: {
-      arguments: "",
+      arguments: " --disable-features=CookiesWithoutSameSiteMustSecure,SameSiteByDefaultCookies ",
       version: "stable",
     },
   };
@@ -43,7 +43,11 @@ module.exports = {
                 test: /\.(ts|tsx)?$/,
                 use: 'ts-loader',
                 exclude: /node_modules/,
-            }
+            },
+            {
+                test: /\.css$/i,
+                use: ['style-loader', 'css-loader'],
+            }            
         ]
     },
     resolve: {
