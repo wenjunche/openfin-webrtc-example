@@ -102,7 +102,6 @@ export const Channel: React.FunctionComponent<Props> = ( (props) => {
 
     return (
       <div> 
-          <div>My test</div> 
         <div>
             <TextField label="channel name" onChange={ (ev) => onChannelNameChange((ev.target as HTMLInputElement).value) } value={ channelName} />
             <Button raised onClick={createChannel} disabled={!isWebRTCReady}>Create Channel</Button>
