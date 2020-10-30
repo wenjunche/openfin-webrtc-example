@@ -32,3 +32,57 @@ Check out [bloomberg service repo](git@github.com:openfin/bloomberg-service.git)
 ```
 
 Once two instances are connected, create a data channel first.  Then click on "Send ReferenceDataRequest" to send a Bloomberg request to the peer.
+
+## Code in the example
+
+1. Dependency in package.json
+
+```sh
+    "openfin-webrtc-client": "1.0.2",
+```
+
+2. Intializing WebRTC Signaling service
+
+```javascript
+   import { Configuration, WebRTCSignaling } from 'openfin-webrtc-client';
+
+   const configuration: Configuration = {
+      signalingBaseUrl: 'https://webrtc-signaling-dev.openfin.co',
+      pairingCode: 'myWebrtcExample'  // both peers need to use the same code
+   };
+
+    const webRTCClient:WebRTCSignaling = new WebRTCSignaling(configuration);    
+    await webRTCClient.init();
+
+```
+
+3. Listen to WebRTC Signaling events
+
+```javascript
+   webRTCClient.on('webrtc', (data: SignalingEvent) => {
+      if (data.action === 'ready') {
+         // WebRTC connection is open
+      }
+      else if (data.action === 'disconnect') {
+         // WebRTC connection and all data chanels are closed.
+      }
+   });
+
+   webRTCClient.on('channel', (ev: SignalingEvent) => {
+      if (ev.action === 'open') {
+         newChannel: RTCDataChannel = ev.channel;
+         // newChannel is open and ready to receive messages
+      }
+      else if (ev.action === 'close') {
+         channel: RTCDataChannel = ev.channel;
+         // channel is closed
+      }
+   });    
+
+```
+
+5. Create WebRTC Data Channel
+
+```javascript
+   webRTCClient.createDataChannel("chanelName");
+```
