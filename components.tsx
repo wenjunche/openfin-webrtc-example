@@ -110,7 +110,7 @@ export const Channel: React.FunctionComponent<Props> = ( (props) => {
             <TextField label="outgoing text" onChange={ (ev) => onOutgoingTextChange((ev.target as HTMLInputElement).value) } />
             <Button raised  onClick={sendChannelText} disabled={ !dataChannel }>Send</Button>
         </div>
-        <div>
+        <div style={{color: "white"}}>
             <span>Incoming Text:</span><span style={{margin: "0 0 0 10px"}}>{incomingText}</span>
         </div>
       </div>
@@ -125,6 +125,7 @@ interface BloombergProps {
 
 const refDataRequest = { 
     type: 'bloomberg',
+    action: 'requestRefData',
     request: {
             serviceUri: "//blp/refdata",
             operationName: "ReferenceDataRequest",
@@ -152,11 +153,22 @@ const refDataRequest = {
         }
     };
 
+const subscribeRequest = { 
+    type: 'bloomberg',
+    action: 'subscribe',
+    request: [{
+        security: 'IBM US Equity', 
+        fields: ['LAST_PRICE'] 
+    }]
+};
+    
+
 export const Bloomberg: React.FunctionComponent<BloombergProps> = ( (props) => {
     const [isWebRTCReady, setIsWebRTCReady] = React.useState(false);
     const dataChannel = React.useRef(null);
     const [sendButtonDescription, setSendButtonDescription] = React.useState('');
     const [incomingText, setIncomingText] = React.useState('');
+    const [subscribeData, setSubscribeData] = React.useState('');
 
     React.useEffect(() => {
         props.webRTCClient.on('webrtc', (data: SignalingEvent) => {
@@ -201,12 +213,18 @@ export const Bloomberg: React.FunctionComponent<BloombergProps> = ( (props) => {
     const onChannelMessage = async (ev: MessageEvent) => {
         const message = JSON.parse(ev.data);
         if (message.type === 'bloomberg') {
-            if (message.request) {
+            if (message.action === 'requestRefData') {
                 const resp = await accessBloombergService(message.request);
                 dataChannel.current.send(JSON.stringify({type: 'bloomberg', response: resp}));
             }
+            if (message.action === 'subscribe') {
+                await subscribeBloombergService(message.request);
+            }
             if (message.response) {
                 setIncomingText(message.response);
+            }
+            if (message.subscribeData) {
+                setSubscribeData(JSON.stringify(message.subscribeData));
             }
         }
     };
@@ -215,6 +233,7 @@ export const Bloomberg: React.FunctionComponent<BloombergProps> = ( (props) => {
             accessBloombergService(refDataRequest.request);
         } 
         else if (dataChannel.current) {
+            setIncomingText('');
             dataChannel.current.send(JSON.stringify(refDataRequest));
         } else {
             setIncomingText('Please create a data channel first');
@@ -233,6 +252,32 @@ export const Bloomberg: React.FunctionComponent<BloombergProps> = ( (props) => {
         setIncomingText(JSON.stringify(response));
         return JSON.stringify(response);
     }
+    const subscribeBloomberg = () => {
+        if (props.blpClient) {
+            subscribeBloombergService(refDataRequest.request);
+        } 
+        else if (dataChannel.current) {
+            setSubscribeData('sending subscribe request');
+            dataChannel.current.send(JSON.stringify(subscribeRequest));
+        } else {
+            setSubscribeData('Please create a data channel first');
+        }
+    }
+    const subscribeBloombergService = async (request:any) => {
+        // @ts-ignore
+        const sessionStarted:boolean = await props.blpClient.startSession();
+        if (!sessionStarted) {
+            setSubscribeData('Error starting blpApi session');
+            return;
+        }
+        // @ts-ignore
+        props.blpClient.addEventListener('subscription-data', e => {
+            setSubscribeData(JSON.stringify(e));
+            dataChannel.current.send(JSON.stringify({type: 'bloomberg', subscribeData: e}));
+        });
+        // @ts-ignore
+        await props.blpClient.subscribe(request);
+    }
 
     return (
       <div>  
@@ -240,7 +285,14 @@ export const Bloomberg: React.FunctionComponent<BloombergProps> = ( (props) => {
             <button disabled={!isWebRTCReady || props.blpClient} onClick={sendBloombergRequest}>{sendButtonDescription}</button>
         </div>
         <div>
-            <label id="bloombergStatus">{incomingText}</label>
+            <label>{incomingText}</label>
+        </div>
+        <br></br>
+        <div>
+            <button disabled={!isWebRTCReady || props.blpClient} onClick={subscribeBloomberg}>Subcribe to IBM US Equity</button>
+        </div>
+        <div>
+            <label>{subscribeData}</label>
         </div>
 
       </div>

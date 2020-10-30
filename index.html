@@ -8,6 +8,18 @@
             font-family: Roboto;
         }
     </style>
+
+    <style name="Base.Theme.Tivi"
+            parent="Theme.MaterialComponents.DayNight">
+    </style>
+<style name="Theme.Tivi" parent="Base.Theme.Tivi">
+    <item name="colorPrimary">@color/slate_500</item>
+    <item name="colorOnPrimary">#000000</item>
+    <item name="colorSecondary">@color/orange_500</item>
+    <item name="colorOnSecondary">#000000</item>
+</style>
+
+
     <title><%= htmlWebpackPlugin.options.title %></title>
     <script type="module">
         import blpApi from "https://openfin.github.io/bloomberg-service/client/bloomberg-blpapi-service.js";
