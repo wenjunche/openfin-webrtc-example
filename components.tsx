@@ -110,7 +110,7 @@ export const Channel: React.FunctionComponent<Props> = ( (props) => {
             <TextField label="outgoing text" onChange={ (ev) => onOutgoingTextChange((ev.target as HTMLInputElement).value) } />
             <Button raised  onClick={sendChannelText} disabled={ !dataChannel }>Send</Button>
         </div>
-        <div style={{color: "white"}}>
+        <div>
             <span>Incoming Text:</span><span style={{margin: "0 0 0 10px"}}>{incomingText}</span>
         </div>
       </div>
