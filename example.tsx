@@ -16,10 +16,14 @@ const configuration: Configuration = {
 };
 
 window.addEventListener("DOMContentLoaded",  async () => {
+    const parsed = queryString.parse(location.search);
+    if (parsed.pairCode) {
+        configuration.pairingCode = parsed.pairCode as string;
+    }
+    console.log(`using pairCode ${configuration.pairingCode}`);
     const webRTCClient:WebRTCSignaling = new WebRTCSignaling(configuration);    
     await webRTCClient.init();
 
-    const parsed = queryString.parse(location.search);
     if (parsed.blp === 'true') {
         await blpClientInit();
     }
