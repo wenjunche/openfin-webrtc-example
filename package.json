@@ -10,7 +10,7 @@
     "start:example:blp": "openfin --launch --config http://localhost:8081/app.json?blp=true"
   },
   "dependencies": {
-    "openfin-webrtc-client": "1.0.2",
+    "openfin-webrtc-client": "1.0.4",
     "query-string": "^6.13.6",
     "rmwc": "^6.1.4",
     "uuid": "^8.3.1"
