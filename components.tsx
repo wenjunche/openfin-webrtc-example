@@ -1,6 +1,6 @@
 
 import * as React from 'react';
-import { WebRTCSignaling, SignalingEvent } from 'openfin-webrtc-client';
+import { PeerConnection, PeerChannel } from 'openfin-webrtc-client';
 
 //import { ThemeProvider } from '@rmwc/theme';
 import '@rmwc/theme/styles';
@@ -13,9 +13,9 @@ import '@rmwc/textfield/styles';
 
 interface Props {
     name: string;
-    webRTCClient:WebRTCSignaling;
-    addChannel: (c: RTCDataChannel) => boolean;
-    removeChannel: (c: RTCDataChannel) => void;
+    peerConnection:PeerConnection;
+    addChannel: (c: PeerChannel) => boolean;
+    removeChannel: (c: PeerChannel) => void;
 }
 
 export const Channel: React.FunctionComponent<Props> = ( (props) => {
@@ -23,39 +23,38 @@ export const Channel: React.FunctionComponent<Props> = ( (props) => {
     const [channelName, setChannelName] = React.useState('');
     const channelNameRef = React.useRef('');
     const [outgoingText, setOutgoingText] = React.useState('');
-    const [dataChannel, setDataChannel] = React.useState<RTCDataChannel>(null);
+    const [dataChannel, setDataChannel] = React.useState<PeerChannel>(null);
     const [incomingText, setIncomingText] = React.useState('');
 
     React.useEffect(() => {
-        props.webRTCClient.on('webrtc', (data: SignalingEvent) => {
-            if (data.action === 'ready') {
-                onWebRTCReady();
-            }
-            else if (data.action === 'disconnect') {
-                onWebRTCDisconnect();
-            }
+        props.peerConnection.onConnect(() => {
+            onWebRTCReady();
         });
-        props.webRTCClient.on('channel', (ev: SignalingEvent) => {
-            if (ev.channel.label === channelNameRef.current ) {
-                if (ev.action === 'open') {
-                    if (props.addChannel(ev.channel)) {
-                        setDataChannel(ev.channel);
-                        ev.channel.addEventListener('message', (onChannelMessage));
-                    } else {
-                        console.error('Error adding channel', ev.channel.label);
-                    }
+        props.peerConnection.onDisconnect(() => {
+            onWebRTCDisconnect();
+        });
+        props.peerConnection.onError((err) => {
+            onWebRTCDisconnect();
+        });
+        props.peerConnection.onChannel((channel: PeerChannel) => {
+            if (channel.name === channelNameRef.current ) {
+                if (props.addChannel(channel)) {
+                    setDataChannel(channel);
+                    channel.onMessage(onChannelMessage);
+                } else {
+                    console.error('Error adding channel', channel.name);
                 }
-                else if (ev.action === 'close') {
-                    props.removeChannel(ev.channel);
+                channel.onDisconnect(() => {
+                    props.removeChannel(channel);
                     cleanup();
-                }
+                });
             }
-            else if (channelNameRef.current === '' && ev.action === 'open') {
-                if (props.addChannel(ev.channel)) {
-                    setChannelName(ev.channel.label);
-                    channelNameRef.current = ev.channel.label;
-                    setDataChannel(ev.channel);
-                    ev.channel.addEventListener('message', (onChannelMessage))
+            else if (channelNameRef.current === '') {
+                if (props.addChannel(channel)) {
+                    setChannelName(channel.name);
+                    channelNameRef.current = channel.name;
+                    setDataChannel(channel);
+                    channel.onMessage(onChannelMessage);
                 }
             }
         });    
@@ -74,8 +73,8 @@ export const Channel: React.FunctionComponent<Props> = ( (props) => {
         setChannelName('');
         channelNameRef.current = '';
     }
-    const onChannelMessage = (ev: MessageEvent) => {
-        const message = JSON.parse(ev.data);
+    const onChannelMessage = (data: string) => {
+        const message = JSON.parse(data);
         if (message.type === 'chat') {
             setIncomingText(message.text);
         }    
@@ -88,7 +87,7 @@ export const Channel: React.FunctionComponent<Props> = ( (props) => {
         setOutgoingText(text);
     };
     const createChannel = () => {
-        props.webRTCClient.createDataChannel(channelNameRef.current);
+        props.peerConnection.createChannel(channelNameRef.current);
     }
     const sendChannelText = () => {
         if (outgoingText && outgoingText !== '') {
@@ -110,7 +109,7 @@ export const Channel: React.FunctionComponent<Props> = ( (props) => {
             <TextField label="outgoing text" onChange={ (ev) => onOutgoingTextChange((ev.target as HTMLInputElement).value) } />
             <Button raised  onClick={sendChannelText} disabled={ !dataChannel }>Send</Button>
         </div>
-        <div style={{color: "white"}}>
+        <div>
             <span>Incoming Text:</span><span style={{margin: "0 0 0 10px"}}>{incomingText}</span>
         </div>
       </div>
@@ -119,7 +118,7 @@ export const Channel: React.FunctionComponent<Props> = ( (props) => {
 })
 
 interface BloombergProps {
-    webRTCClient:WebRTCSignaling;
+    peerConnection:PeerConnection;
     blpClient?: any;  // if set, this desktop has access to Blooberg service
 }
 
@@ -171,23 +170,15 @@ export const Bloomberg: React.FunctionComponent<BloombergProps> = ( (props) => {
     const [subscribeData, setSubscribeData] = React.useState('');
 
     React.useEffect(() => {
-        props.webRTCClient.on('webrtc', (data: SignalingEvent) => {
-            if (data.action === 'ready') {
-                onWebRTCReady();
-            }
-            else if (data.action === 'disconnect') {
-                onWebRTCDisconnect();
-            }
+        onWebRTCReady();
+        props.peerConnection.onDisconnect(() => {
+            onWebRTCDisconnect();
         });
-        props.webRTCClient.on('channel', (ev: SignalingEvent) => {
+        props.peerConnection.onChannel((channel: PeerChannel) => {
             if (!dataChannel.current ) {
-                if (ev.action === 'open') {
-                    dataChannel.current = ev.channel;
-                    ev.channel.addEventListener('message', (onChannelMessage));
-                }
-                else if (ev.action === 'close') {
-                    cleanup();
-                }
+                dataChannel.current = channel;
+                channel.onMessage(onChannelMessage);
+                channel.onDisconnect(cleanup);
             }
         });    
     }, []);
@@ -210,8 +201,8 @@ export const Bloomberg: React.FunctionComponent<BloombergProps> = ( (props) => {
     const cleanup = () => {
         dataChannel.current = '';
     }
-    const onChannelMessage = async (ev: MessageEvent) => {
-        const message = JSON.parse(ev.data);
+    const onChannelMessage = async (data: string) => {
+        const message = JSON.parse(data);
         if (message.type === 'bloomberg') {
             if (message.action === 'requestRefData') {
                 const resp = await accessBloombergService(message.request);

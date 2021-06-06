@@ -1,10 +1,10 @@
-import { Configuration, WebRTCSignaling } from 'openfin-webrtc-client';
+import { Configuration, PeerChannel, PeerConnection } from 'openfin-webrtc-client';
 import queryString from 'query-string';
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import { Bloomberg, Channel } from './components';
 
-const channelsMap: Map<string, RTCDataChannel> = new Map();  // label -> DataChannel
+const channelsMap: Map<string, PeerChannel> = new Map();  // label -> DataChannel
 
 // @ts-ignore
 let blpClient:any;
@@ -16,45 +16,47 @@ const configuration: Configuration = {
 };
 
 window.addEventListener("DOMContentLoaded",  async () => {
-    const webRTCClient:WebRTCSignaling = new WebRTCSignaling(configuration);    
-    await webRTCClient.init();
+    const peerConnection:PeerConnection = new PeerConnection(configuration);
 
     const parsed = queryString.parse(location.search);
     if (parsed.blp === 'true') {
         await blpClientInit();
     }
 
-    setupChannelUI(webRTCClient);
+    setupChannelUI(peerConnection);
 
+    await peerConnection.initialize();
 });
 
-function addChannel(channel: RTCDataChannel): boolean {
-    if (!channelsMap.has(channel.label)) {
-        channelsMap.set(channel.label, channel);
+function addChannel(channel: PeerChannel): boolean {
+    if (!channelsMap.has(channel.name)) {
+        channelsMap.set(channel.name, channel);
         return true;
     } else {
         return false;
     }
 }
 
-function removeChannel(channel: RTCDataChannel) {
-    channelsMap.delete(channel.label);
+function removeChannel(channel: PeerChannel) {
+    channelsMap.delete(channel.name);
 }
 
-function setupChannelUI(webRTCClient: WebRTCSignaling ) {
+function setupChannelUI(peerConnection: PeerConnection) {
 
     ReactDOM.render(
-        <Channel name='channel1' webRTCClient={webRTCClient} addChannel={addChannel} removeChannel={removeChannel} />,
+        <Channel name='channel1' peerConnection={peerConnection}
+                addChannel={addChannel} removeChannel={removeChannel} />,
         document.getElementById('channel1')
     );
 
     ReactDOM.render(
-        <Channel name='channel2' webRTCClient={webRTCClient} addChannel={addChannel} removeChannel={removeChannel} />,
+        <Channel name='channel2' peerConnection={peerConnection}
+                addChannel={addChannel} removeChannel={removeChannel} />,
         document.getElementById('channel2')
     );
 
     ReactDOM.render(
-        <Bloomberg webRTCClient={webRTCClient} blpClient={blpClient} />,
+        <Bloomberg peerConnection={peerConnection} blpClient={blpClient} />,
         document.getElementById('bloomberg')
     );
 
